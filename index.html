@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google Doc to ELearning Package Converter</title>
+    
+    <!-- Load JSZip for client-side ZIP generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <!-- Load Tailwind CSS for modern styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Brand Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=Google+Sans+Code:ital,wght,MONO@0,300..800,1;1,300..800,1&family=Special+Gothic+Expanded+One&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        docebo: {
+                            navy: '#06065D',
+                            violet: '#7E2EE9',
+                            pink: '#FF5DD8',
+                            green: '#54FA77',
+                            cobalt: '#0057FF',
+                            stone: '#E6DACB',
+                            black: '#2A2923',
+                            bg: '#F6F5F2',
+                            lightBlue: '#DBF2FF',
+                            lightLavender: '#E9D7FF',
+                            lightLime: '#E3FFAB',
+                            lightPink: '#FFD1F0'
+                        }
+                    },
+                    fontFamily: {
+                        title: ['"Special Gothic Expanded One"', '"League Gothic"', '"Pathway Gothic One"', 'sans-serif'],
+                        body: ['"Figtree"', 'sans-serif']
+                    }
+                }
+            }
+        };
+    </script>
+    
+    <style>
+        body { font-family: 'Figtree', sans-serif; }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-docebo-lightBlue via-docebo-lightLavender to-docebo-lightPink font-body min-h-screen flex items-center justify-center p-4">
+
+    <div class="max-w-xl w-full bg-white rounded-2xl shadow-xl overflow-hidden border border-docebo-stone my-8">
+        
+        <!-- Header -->
+        <div class="bg-docebo-navy p-6 text-white text-center border-b-4 border-docebo-pink">
+            <h1 class="text-2xl font-bold tracking-tight font-title">Google Doc to ELearning Package Converter</h1>
+            <p class="text-docebo-stone mt-2 text-sm font-body">Convert a Google doc or HTML page into an LMS-ready package.</p>
+        </div>
+
+        <div class="p-8">
+            <!-- Drag and Drop Zone -->
+            <label id="dropZone" class="flex flex-col items-center justify-center w-full h-44 border-2 border-docebo-stone border-dashed rounded-xl cursor-pointer bg-docebo-bg hover:bg-docebo-violet/10 hover:border-docebo-violet transition-colors duration-200 ease-in-out group">
+                <div class="flex flex-col items-center justify-center pt-5 pb-6">
+                    <svg class="w-10 h-10 mb-4 text-slate-400 group-hover:text-docebo-violet transition-colors" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 16">
+                        <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 13h3a3 3 0 0 0 0-6h-.025A5.56 5.56 0 0 0 16 6.5 5.5 5.5 0 0 0 5.207 5.021C5.137 5.017 5.071 5 5 5a4 4 0 0 0 0 8h2.167M10 15V6m0 0L8 8m2-2 2 2"/>
+                    </svg>
+                    <p class="mb-2 text-sm text-docebo-black"><span class="font-semibold text-docebo-violet">Click to upload</span> or drag and drop</p>
+                    <p class="text-xs text-slate-500">Google Docs Web Page Export (.zip) or Single File (.html)</p>
+                </div>
+                <input id="fileInput" type="file" accept=".zip,.html,.htm" class="hidden" />
+            </label>
+
+            <!-- Output Format Selector (Radio Buttons) -->
+            <div id="formatContainer" class="mt-6 mb-4">
+                <label class="block text-sm font-semibold text-docebo-black mb-3 font-title tracking-wide">Select Output Format:</label>
+                <div class="grid grid-cols-1 gap-2.5">
+                    
+                    <label class="flex items-center p-3 border border-docebo-stone rounded-xl bg-docebo-bg hover:bg-white hover:border-docebo-violet transition-all cursor-pointer group">
+                        <input type="radio" name="formatRadio" value="scorm2004" checked class="w-4 h-4 text-docebo-violet focus:ring-docebo-violet accent-docebo-violet cursor-pointer">
+                        <div class="ml-3">
+                            <span class="block text-sm font-semibold text-docebo-navy group-hover:text-docebo-violet">SCORM 2004 3rd Edition</span>
+                            <span class="block text-xs text-slate-500">Industry standard for modern LMS platforms</span>
+                        </div>
+                    </label>
+
+                    <label class="flex items-center p-3 border border-docebo-stone rounded-xl bg-docebo-bg hover:bg-white hover:border-docebo-violet transition-all cursor-pointer group">
+                        <input type="radio" name="formatRadio" value="scorm12" class="w-4 h-4 text-docebo-violet focus:ring-docebo-violet accent-docebo-violet cursor-pointer">
+                        <div class="ml-3">
+                            <span class="block text-sm font-semibold text-docebo-navy group-hover:text-docebo-violet">SCORM 1.2</span>
+                            <span class="block text-xs text-slate-500">Widely supported legacy format</span>
+                        </div>
+                    </label>
+
+                </div>
+            </div>
+
+            <!-- Status & Action Area -->
+            <div id="statusContainer" class="mt-6 hidden">
+                <div class="flex items-center p-4 mb-4 text-sm text-green-900 rounded-lg bg-green-50 border border-docebo-green" role="alert">
+                    <svg class="flex-shrink-0 inline w-4 h-4 me-3 text-docebo-green" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5Zm3.707 8.207-4 4a1 1 0 0 1-1.414 0l-2-2a1 1 0 0 1 1.414-1.414L9 10.586l3.293-3.293a1 1 0 0 1 1.414 1.414Z"/>
+                    </svg>
+                    <div>
+                        <span class="font-semibold">File loaded successfully:</span> <span id="fileNameDisplay"></span>
+                    </div>
+                </div>
+                
+                <button id="downloadBtn" class="w-full text-white bg-docebo-violet hover:bg-docebo-navy focus:ring-4 focus:ring-docebo-violet/50 font-medium rounded-lg font-title tracking-wide text-sm px-5 py-3.5 focus:outline-none transition-colors shadow-sm">
+                    Generate Package (ZIP)
+                </button>
+            </div>
+            
+            <div id="errorContainer" class="mt-4 hidden p-4 text-sm text-white rounded-lg bg-docebo-pink border border-red-200"></div>
+
+            <!-- Expandable Info Box -->
+            <details class="mt-6 bg-white border border-docebo-stone rounded-xl shadow-sm group">
+                <summary class="flex items-center justify-between p-4 font-semibold cursor-pointer text-docebo-navy font-body text-sm outline-none">
+                    How to download a Google Doc as a ZIP
+                    <svg class="w-5 h-5 text-docebo-violet group-open:rotate-180 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+                </summary>
+                <div class="p-4 border-t border-docebo-stone text-sm text-docebo-black font-body bg-docebo-bg rounded-b-xl">
+                    <ol class="list-decimal pl-5 space-y-2">
+                        <li>Open your document in <strong>Google Docs</strong>.</li>
+                        <li>In the top menu, click on <strong>File</strong>.</li>
+                        <li>Hover over <strong>Download</strong>.</li>
+                        <li>Select <strong>Web Page (.html, zipped)</strong>.</li>
+                        <li>Upload the downloaded <code>.zip</code> file directly to this tool above.</li>
+                    </ol>
+                </div>
+            </details>
+        </div>
+    </div>
+
+    <script>
+        let uploadedFileData = null;
+        let isZipFile = false;
+        let fileName = '';
+        
+        const fileInput = document.getElementById('fileInput');
+        const dropZone = document.getElementById('dropZone');
+        const statusContainer = document.getElementById('statusContainer');
+        const fileNameDisplay = document.getElementById('fileNameDisplay');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const errorContainer = document.getElementById('errorContainer');
+
+        // Drag and drop event listeners
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, preventDefaults, false);
+        });
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropZone.addEventListener(eventName, () => dropZone.classList.add('bg-docebo-violet/10', 'border-docebo-violet'), false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, () => dropZone.classList.remove('bg-docebo-violet/10', 'border-docebo-violet'), false);
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            handleFiles(files);
+        });
+
+        fileInput.addEventListener('change', function(e) {
+            handleFiles(e.target.files);
+        });
+
+        function handleFiles(files) {
+            errorContainer.classList.add('hidden');
+            
+            if (files.length === 0) return;
+            const file = files[0];
+            
+            const isZip = file.name.toLowerCase().endsWith('.zip');
+            const isHtml = file.name.toLowerCase().endsWith('.html') || file.name.toLowerCase().endsWith('.htm');
+            
+            if (!isZip && !isHtml) {
+                showError("Please upload a valid .zip or .html file.");
+                return;
+            }
+            
+            isZipFile = isZip;
+            fileName = file.name;
+            const reader = new FileReader();
+            
+            reader.onload = function(event) {
+                uploadedFileData = event.target.result;
+                fileNameDisplay.innerText = fileName;
+                statusContainer.classList.remove('hidden');
+            };
+            
+            reader.onerror = function() {
+                showError("Failed to read the file.");
+            };
+            
+            // Read binary for ZIPs, read text for HTML
+            if (isZipFile) {
+                reader.readAsArrayBuffer(file);
+            } else {
+                reader.readAsText(file);
+            }
+        }
+        
+        function showError(msg) {
+            errorContainer.innerText = msg;
+            errorContainer.classList.remove('hidden');
+            statusContainer.classList.add('hidden');
+        }
+
+        function getSelectedFormat() {
+            const selectedOption = document.querySelector('input[name="formatRadio"]:checked');
+            return selectedOption ? selectedOption.value : 'scorm2004';
+        }
+
+        downloadBtn.addEventListener('click', async function() {
+            const oldText = downloadBtn.innerText;
+            downloadBtn.innerText = "Processing...";
+            downloadBtn.disabled = true;
+            downloadBtn.classList.add('opacity-75', 'cursor-not-allowed');
+            
+            const format = getSelectedFormat();
+            await generatePackage(uploadedFileData, fileName, isZipFile, format);
+            
+            downloadBtn.disabled = false;
+            downloadBtn.classList.remove('opacity-75', 'cursor-not-allowed');
+            downloadBtn.innerText = oldText;
+        });
+
+        async function generatePackage(fileData, originalFileName, isZip, format) {
+            try {
+                const scormZip = new JSZip();
+                
+                const fileManifestEntries = [];
+                let htmlFilename = null;
+                let htmlContent = '';
+
+                if (isZip) {
+                    const originalZip = await JSZip.loadAsync(fileData);
+                    for (const [relativePath, zipEntry] of Object.entries(originalZip.files)) {
+                        if (zipEntry.dir) continue;
+                        if (relativePath.toLowerCase().endsWith('.html') && !htmlFilename) {
+                            htmlFilename = "index.html"; // FORCE name to index.html for LMS compatibility
+                            htmlContent = await zipEntry.async("text");
+                        } else {
+                            const extractedData = await zipEntry.async("uint8array");
+                            scormZip.file(relativePath, extractedData);
+                            fileManifestEntries.push(`<file href="${relativePath}" />`);
+                        }
+                    }
+                } else {
+                    htmlFilename = "index.html"; // FORCE name to index.html for LMS compatibility
+                    htmlContent = fileData;
+                }
+
+                if (!htmlFilename) {
+                    showError("No HTML file found to process.");
+                    return;
+                }
+
+                // Generate dynamic course title
+                const courseTitle = originalFileName.replace(/\.(zip|html|htm)$/i, '').replace(/[-_]/g, ' ');
+                const filesXmlString = fileManifestEntries.join('\n            ');
+                const safeHtmlFilename = "index.html";
+                
+                let scormJs = "";
+
+                // --- 1. SCORM 2004 3RD EDITION ---
+                if (format === 'scorm2004') {
+                    scormJs = `
+var scorm = {
+    apiHandle: null, isCompleted: false,
+    findAPI: function(win) {
+        var attempts = 0;
+        try { while ((win.API_1484_11 == null) && (win.parent != null) && (win.parent != win)) { attempts++; if (attempts > 500) return null; win = win.parent; } return win.API_1484_11; } catch (e) { return null; }
+    },
+    getAPI: function() { var api = this.findAPI(window); if (!api && window.opener != null) api = this.findAPI(window.opener); return api; },
+    init: function() { this.apiHandle = this.getAPI(); if (this.apiHandle) { this.apiHandle.Initialize(""); this.apiHandle.SetValue("cmi.completion_status", "incomplete"); this.apiHandle.Commit(""); } },
+    complete: function() {
+        if (this.isCompleted) return;
+        try { if (this.apiHandle) { this.apiHandle.SetValue("cmi.completion_status", "completed"); this.apiHandle.SetValue("cmi.success_status", "passed"); this.apiHandle.SetValue("cmi.score.scaled", "1.0"); this.apiHandle.SetValue("cmi.score.raw", "100"); this.apiHandle.SetValue("cmi.exit", "normal"); this.apiHandle.Commit(""); this.apiHandle.Terminate(""); this.isCompleted = true; } } catch (e) {}
+    }
+};`;
+                    scormZip.file("imsmanifest.xml", `<?xml version="1.0" standalone="no" ?>
+<manifest identifier="com.custom.scorm2004" version="1" xmlns="http://www.imsglobal.org/xsd/imscp_v1p1" xmlns:adlcp="http://www.adlnet.org/xsd/adlcp_v1p3" xmlns:adlseq="http://www.adlnet.org/xsd/adlseq_v1p3" xmlns:adlnav="http://www.adlnet.org/xsd/adlnav_v1p3" xmlns:imsss="http://www.imsglobal.org/xsd/imsss">
+    <metadata><schema>ADL SCORM</schema><schemaversion>2004 3rd Edition</schemaversion></metadata>
+    <organizations default="org_1"><organization identifier="org_1"><title>${courseTitle}</title><item identifier="item_1" identifierref="res_1"><title>${courseTitle}</title><imsss:sequencing><imsss:deliveryControls tracked="true" completionSetByContent="true" objectiveSetByContent="true"/></imsss:sequencing></item></organization></organizations>
+    <resources><resource identifier="res_1" type="webcontent" adlcp:scormType="sco" href="${htmlFilename}"><file href="${htmlFilename}" />\n            ${filesXmlString}</resource></resources>
+</manifest>`);
+                } 
+                
+                // --- 2. SCORM 1.2 ---
+                else if (format === 'scorm12') {
+                    scormJs = `
+var scorm = {
+    apiHandle: null, isCompleted: false,
+    findAPI: function(win) {
+        var attempts = 0;
+        try { while ((win.API == null) && (win.parent != null) && (win.parent != win)) { attempts++; if (attempts > 500) return null; win = win.parent; } return win.API; } catch (e) { return null; }
+    },
+    getAPI: function() { var api = this.findAPI(window); if (!api && window.opener != null) api = this.findAPI(window.opener); return api; },
+    init: function() { this.apiHandle = this.getAPI(); if (this.apiHandle) { this.apiHandle.LMSInitialize(""); this.apiHandle.LMSSetValue("cmi.core.lesson_status", "incomplete"); this.apiHandle.LMSCommit(""); } },
+    complete: function() {
+        if (this.isCompleted) return;
+        try { if (this.apiHandle) { this.apiHandle.LMSSetValue("cmi.core.lesson_status", "passed"); this.apiHandle.LMSSetValue("cmi.core.score.raw", "100"); this.apiHandle.LMSCommit(""); this.apiHandle.LMSFinish(""); this.isCompleted = true; } } catch (e) {}
+    }
+};`;
+                    scormZip.file("imsmanifest.xml", `<?xml version="1.0" standalone="no" ?>
+<manifest identifier="com.custom.scorm12" version="1" xmlns="http://www.imsproject.org/xsd/imscp_rootv1p1p2" xmlns:adlcp="http://www.adlnet.org/xsd/adlcp_rootv1p2">
+    <metadata><schema>ADL SCORM</schema><schemaversion>1.2</schemaversion></metadata>
+    <organizations default="org_1"><organization identifier="org_1"><title>${courseTitle}</title><item identifier="item_1" identifierref="res_1"><title>${courseTitle}</title></item></organization></organizations>
+    <resources><resource identifier="res_1" type="webcontent" adlcp:scormtype="sco" href="${htmlFilename}"><file href="${htmlFilename}" />\n            ${filesXmlString}</resource></resources>
+</manifest>`);
+                }
+
+                // --- Inject Core UI, Fonts, & Engine ---
+                const scriptOpen = '<scri' + 'pt>';
+                const scriptClose = '</scri' + 'pt>';
+                const bodyClose = '</bo' + 'dy>';
+                const bodyRegex = new RegExp('</bo' + 'dy>', 'i');
+                const headRegex = new RegExp('</he' + 'ad>', 'i');
+                
+                // Ensure branded fonts apply to the generated course content too
+                const fontInjection = `
+<!-- Injected Brand Fonts & Styles -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=Google+Sans+Code:ital,wght,MONO@0,300..800,1;1,300..800,1&family=Special+Gothic+Expanded+One&display=swap" rel="stylesheet">
+<style>
+    body { font-family: 'Figtree', sans-serif !important; }
+    .font-title { font-family: 'Special Gothic Expanded One', 'League Gothic', sans-serif !important; }
+</style>
+</he` + `ad>`;
+                
+                const completionUI = `
+<div id="scorm-progress-container" style="position:fixed; top:0; left:0; width:100%; height:6px; background-color:#E1DBD2; z-index:999999;">
+    <div id="scorm-progress-bar" style="height:100%; width:0%; background-color:#7E2EE9; transition: width 0.1s;"></div>
+</div>
+<div style="position:fixed; bottom:20px; right:20px; background:white; padding:15px; border:1px solid #E6DACB; border-radius:8px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); z-index:99999; font-family: 'Figtree', sans-serif; max-width: 250px;">
+    <p id="scorm-status-msg" style="margin: 0 0 10px 0; font-size: 14px; color: #2A2923;">Please review all content below.</p>
+    <button id="scorm-complete-btn" onclick="triggerCompletion()" disabled style="background:#E1DBD2; color:#807874; border:none; padding:10px 15px; border-radius:6px; cursor:not-allowed; font-weight:bold; width: 100%; transition: all 0.3s;" class="font-title">Locked</button>
+</div>
+\n` + scriptOpen + `\n` + scormJs + `\n
+    var isButtonActive = false;
+
+    function triggerCompletion() {
+        if (!isButtonActive) return;
+        if (typeof scorm === 'undefined') {
+            alert("Error: Script block failed to load. Please contact support.");
+            return;
+        }
+        scorm.complete();
+        var btn = document.getElementById('scorm-complete-btn');
+        var msg = document.getElementById('scorm-status-msg');
+        if (btn) { 
+            btn.innerText='Completed!'; 
+            btn.style.backgroundColor='#54FA77'; 
+            btn.style.color='#06065D'; 
+            btn.disabled=true; 
+            btn.style.cursor='default';
+        }
+        if (msg) { 
+            msg.innerText = 'Course marked complete! You can safely close this window.'; 
+            msg.style.color = '#106D24'; 
+        }
+    }
+
+    // Safely load logic
+    window.addEventListener('load', function() { 
+        if (typeof scorm !== 'undefined') scorm.init(); 
+        checkScroll(); 
+    });
+
+    function checkScroll() {
+        var scrollPosition = Math.max(window.pageYOffset, document.documentElement.scrollTop, document.body.scrollTop);
+        var windowSize = window.innerHeight || document.documentElement.clientHeight || document.body.clientHeight;
+        var bodyHeight = Math.max(document.body.scrollHeight, document.documentElement.scrollHeight);
+        
+        var scrollPercentage = (scrollPosition / (bodyHeight - windowSize)) * 100;
+        scrollPercentage = Math.min(100, Math.max(0, scrollPercentage)); 
+        
+        if (bodyHeight <= windowSize) scrollPercentage = 100;
+
+        var progressBar = document.getElementById('scorm-progress-bar');
+        if (progressBar) progressBar.style.width = scrollPercentage + '%';
+
+        if (isButtonActive || (typeof scorm !== 'undefined' && scorm.isCompleted)) return;
+        
+        // Check if user is near the bottom
+        if (scrollPercentage >= 99 || Math.round(scrollPosition + windowSize) >= bodyHeight - 100) {
+            isButtonActive = true;
+            var btn = document.getElementById('scorm-complete-btn');
+            var msg = document.getElementById('scorm-status-msg');
+            if (btn) {
+                btn.disabled = false;
+                btn.style.backgroundColor = '#7E2EE9'; 
+                btn.style.color = 'white';
+                btn.style.cursor = 'pointer';
+                btn.innerText = 'Mark Complete';
+            }
+            if (msg) msg.innerText = 'You may now complete the course.';
+        }
+    }
+
+    // ACTIVATE BUTTON ON SCROLL TO BOTTOM
+    window.addEventListener('scroll', checkScroll);
+` + scriptClose + `\n` + bodyClose;
+
+                // Apply Font Injection
+                let modifiedHtml = htmlContent;
+                if (modifiedHtml.match(headRegex)) {
+                    modifiedHtml = modifiedHtml.replace(headRegex, fontInjection);
+                }
+                
+                // Apply Body/UI Injection
+                if (modifiedHtml.match(bodyRegex)) {
+                    modifiedHtml = modifiedHtml.replace(bodyRegex, completionUI);
+                } else {
+                    modifiedHtml += completionUI; // Fallback if the closing tag is missing
+                }
+
+                scormZip.file(htmlFilename, modifiedHtml);
+
+                // --- 5. Generate and trigger download ---
+                const originalNameWithoutExt = originalFileName.replace(/\.(zip|html|htm)$/i, '');
+                const zipName = originalNameWithoutExt + "_" + format.toUpperCase() + ".zip";
+
+                const content = await scormZip.generateAsync({type:"blob"});
+                
+                const url = window.URL.createObjectURL(content);
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = zipName;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
+                
+                // Show success state
+                downloadBtn.innerText = "Downloaded!";
+                downloadBtn.classList.replace('bg-docebo-violet', 'bg-docebo-green');
+                downloadBtn.classList.replace('hover:bg-docebo-navy', 'hover:bg-docebo-green');
+                downloadBtn.classList.replace('text-white', 'text-docebo-navy');
+                
+                setTimeout(() => {
+                    downloadBtn.innerText = "Generate Package (ZIP)";
+                    downloadBtn.classList.replace('bg-docebo-green', 'bg-docebo-violet');
+                    downloadBtn.classList.replace('hover:bg-docebo-green', 'hover:bg-docebo-navy');
+                    downloadBtn.classList.replace('text-docebo-navy', 'text-white');
+                }, 3000);
+            } catch (err) {
+                showError("An error occurred while processing the file: " + err.message);
+                downloadBtn.disabled = false;
+                downloadBtn.innerText = "Generate Package (ZIP)";
+            }
+        }
+    </script>
+</body>
+</html>
