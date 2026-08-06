@@ -55,7 +55,7 @@
         <!-- Header -->
         <div class="bg-docebo-navy p-6 text-white text-center border-b-4 border-docebo-pink">
             <h1 class="text-2xl font-bold tracking-tight font-title">Google Doc to SCORM Converter</h1>
-            <p class="text-docebo-stone mt-2 text-sm font-body">Convert a Google doc or HTML page into an Docebo-ready SCORM package.</p>
+            <p class="text-docebo-stone mt-2 text-sm font-body">Convert a Google doc or HTML page into an LMS-ready SCORM package.</p>
         </div>
 
         <div class="p-8">
@@ -74,13 +74,12 @@
             <!-- Output Format Selector (Radio Buttons) -->
             <div id="formatContainer" class="mt-6 mb-4">
                 <label class="block text-sm font-semibold text-docebo-black mb-3 font-title tracking-wide">Select Output Format:</label>
-                <div class="grid grid-cols-1 gap-2.5">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-2.5">
                     
                     <label class="flex items-center p-3 border border-docebo-stone rounded-xl bg-docebo-bg hover:bg-white hover:border-docebo-violet transition-all cursor-pointer group">
                         <input type="radio" name="formatRadio" value="scorm2004" checked class="w-4 h-4 text-docebo-violet focus:ring-docebo-violet accent-docebo-violet cursor-pointer">
                         <div class="ml-3">
-                            <span class="block text-sm font-semibold text-docebo-navy group-hover:text-docebo-violet">SCORM 2004 3rd Edition</span>
-                            <span class="block text-xs text-slate-500">Industry standard for modern LMS platforms</span>
+                            <span class="block text-sm font-semibold text-docebo-navy group-hover:text-docebo-violet">SCORM 2004 3rd Ed.</span>
                         </div>
                     </label>
 
@@ -88,7 +87,6 @@
                         <input type="radio" name="formatRadio" value="scorm12" class="w-4 h-4 text-docebo-violet focus:ring-docebo-violet accent-docebo-violet cursor-pointer">
                         <div class="ml-3">
                             <span class="block text-sm font-semibold text-docebo-navy group-hover:text-docebo-violet">SCORM 1.2</span>
-                            <span class="block text-xs text-slate-500">Widely supported legacy format</span>
                         </div>
                     </label>
 
@@ -263,6 +261,11 @@
                     showError("No HTML file found to process.");
                     return;
                 }
+
+                // --- ISSUE #6: SANITIZE GOOGLE DOCS CODE BLOCKS ---
+                // Google Docs uses Private Use Area unicode characters 60418 and 60419 to mark the start/end of code blocks.
+                // Browsers can't render these, resulting in phantom missing character squares. 
+                htmlContent = htmlContent.replace(/&#60418;|&#60419;|\uEBF2|\uEBF3/g, '');
 
                 // Generate dynamic course title
                 const courseTitle = originalFileName.replace(/\.(zip|html|htm)$/i, '').replace(/[-_]/g, ' ');
